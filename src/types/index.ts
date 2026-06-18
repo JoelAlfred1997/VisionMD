@@ -3,8 +3,8 @@
  * Kept framework-agnostic so file/markdown logic stays testable in isolation.
  */
 
-/** The three reading modes the user can switch between. */
-export const VIEW_MODES = ["document", "raw", "split"] as const;
+/** The reading/editing modes the user can switch between. */
+export const VIEW_MODES = ["document", "raw", "split", "edit"] as const;
 export type ViewMode = (typeof VIEW_MODES)[number];
 
 /** Type guard for a valid view mode (used to validate persisted values). */

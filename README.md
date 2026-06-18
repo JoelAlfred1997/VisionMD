@@ -4,8 +4,10 @@
 
 ### Markdown for machines. Beautiful documents for humans.
 
-VisionMD is a fast, private, **read-only Markdown viewer** that turns plain `.md`
-files into calm, polished, document-style reading — **without ever changing your file.**
+VisionMD is a fast, private **Markdown viewer & editor** that turns plain `.md`
+files into calm, polished, document-style reading — and lets you edit the source
+with a live preview and save when *you* choose. **It only ever touches your file when
+you explicitly save.**
 
 [![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
@@ -22,24 +24,25 @@ files into calm, polished, document-style reading — **without ever changing yo
 ## What is VisionMD?
 
 Markdown is great to *write*, but raw `.md` files are not pleasant to *read* — and
-most editors show you a cramped, editor-flavoured preview. VisionMD is the opposite:
-a dedicated **viewer** whose only job is to make a Markdown file look like a finished
-document.
+most editors show you a cramped, editor-flavoured preview. VisionMD makes a Markdown
+file look like a finished document, and when you want to change it, drops you into a
+live split editor.
 
 You point it at a file and get a clean reading layout with a navigable outline,
 syntax-highlighted code, rendered diagrams, callouts, full-document search, multiple
-themes, and one-click export to PDF or HTML. Your original file is **never modified** —
-VisionMD only ever reads it.
+themes, and one-click export to PDF or HTML. Switch to **Edit** mode to change the
+source with a live preview, then **Ctrl+S** to save. VisionMD never writes to your
+file on its own — only when you save.
 
 It runs as a lightweight native desktop app (via [Tauri](https://tauri.app)) and the
 exact same UI also runs in any browser during development.
 
 ### Why you might want it
 
-- 📖 **Read, don't edit.** A distraction-free reading surface for notes, READMEs,
-  research, and lecture notes.
+- 📖 **Read or edit.** A distraction-free reading surface for notes, READMEs, research,
+  and lecture notes — with a live editor a click away when you need to make changes.
 - 🔒 **Completely private.** No network, no telemetry, no accounts. Files stay on your
-  machine and are opened read-only.
+  machine, and nothing is written unless you save.
 - 🎨 **Looks the way you want.** Five hand-tuned themes, from a calm light default to a
   low-glare dark mode and a formal academic serif.
 - 🪶 **Tiny and fast.** A Tauri shell (system WebView, no bundled Chromium) means a small
@@ -51,7 +54,9 @@ exact same UI also runs in any browser during development.
 
 | | Feature | Details |
 |---|---|---|
-| 📄 | **Document / Raw / Split views** | Read the polished render, inspect the untouched source, or see both side-by-side. |
+| 📄 | **Document / Raw / Split views** | Read the polished render, inspect the source, or see both side-by-side. |
+| ✏️ | **Live editor** | An **Edit** mode with the Markdown source on the left and a live preview on the right. |
+| 💾 | **Save & Save As** | Edit and save back to your file with `Ctrl+S` (or `Ctrl+Shift+S` for a new file). An unsaved-changes indicator and a discard prompt keep your edits safe. |
 | 🎨 | **5 themes** | Vision Classic, Academic, GitHub Clean, Interview Notes, and Dark Focus (default). Switch instantly; your choice is remembered. |
 | 🧭 | **Outline sidebar** | Auto-generated from headings — click to jump to any section. |
 | 🔍 | **In-document search** | `Ctrl/Cmd+F` highlights every match with next/previous navigation and a live count. |
@@ -81,6 +86,9 @@ exact same UI also runs in any browser during development.
   <tr>
     <td width="50%"><strong>Split view (render + source)</strong><br/><img src="docs/screenshots/05-split-view.png" alt="Split view showing rendered document and raw source"/></td>
     <td width="50%"><strong>Find in document</strong><br/><img src="docs/screenshots/06-search.png" alt="In-document search with highlighted matches"/></td>
+  </tr>
+  <tr>
+    <td colspan="2"><strong>Live editor — source + live preview</strong><br/><img src="docs/screenshots/08-edit-mode.png" alt="Edit mode: editable Markdown source on the left, live preview on the right, with an unsaved-changes indicator"/></td>
   </tr>
   <tr>
     <td colspan="2"><strong>Syntax highlighting &amp; tables</strong><br/><img src="docs/screenshots/07-code-mermaid.png" alt="Syntax-highlighted code blocks and a styled table"/></td>
@@ -138,7 +146,41 @@ dialog, recent-file reopening, etc.).
 npm run tauri build
 ```
 
-The installer/executable is written to `src-tauri/target/release/bundle/`.
+This produces a standalone executable and installers in
+`src-tauri/target/release/`:
+
+- **`VisionMD.exe`** — the standalone app (in `target/release/`).
+- **`bundle/msi/VisionMD_0.1.0_x64_en-US.msi`** — Windows MSI installer.
+- **`bundle/nsis/VisionMD_0.1.0_x64-setup.exe`** — Windows NSIS installer.
+
+(On macOS you get a `.app` / `.dmg`; on Linux an `.AppImage` / `.deb`.)
+
+### Install it & run from an icon
+
+1. Run `npm run tauri build`.
+2. Double-click the installer in `src-tauri/target/release/bundle/` (MSI or NSIS).
+   It installs VisionMD and adds a **Start-menu / desktop shortcut** you can click
+   to launch it like any other app. (Right-click the shortcut → *Pin to Start* or
+   *Pin to taskbar* if you like.)
+
+> Prefer not to install? Just run `src-tauri/target/release/VisionMD.exe` directly,
+> or make a shortcut to it. The file association below, however, needs the installer.
+
+### Make VisionMD your default Markdown reader (Windows)
+
+VisionMD registers itself as a handler for `.md`, `.markdown`, `.mdown`, and `.mkd`
+files, and **opens the file you double-click** (it's a true file-association handler,
+not just an app that launches blank). To set it as the default:
+
+1. Install VisionMD with the MSI or NSIS installer (this registers the associations).
+2. Right-click any `.md` file → **Open with → Choose another app**.
+3. Pick **VisionMD**, tick **“Always use this app to open .md files”**, and click OK.
+
+Now double-clicking any Markdown file opens it straight in VisionMD. If the app is
+already open, the file loads in the existing window instead of starting a new one.
+
+> To set the default per-extension in bulk: **Settings → Apps → Default apps →
+> Choose defaults by file type**, then assign VisionMD to each Markdown extension.
 
 ---
 
@@ -155,8 +197,9 @@ There are three ways to open a Markdown file:
 
 Supported extensions: `.md`, `.markdown`, `.mdown`, `.mkd`.
 
-> 🔒 VisionMD opens files **read-only**. It never writes back to your `.md`, and the
-> status bar always shows **“Source unchanged.”**
+> 🔒 VisionMD opens files for reading and never writes to your `.md` on its own. The
+> status bar shows **“Saved”** until you make an edit, then **“Unsaved changes”** until
+> you save.
 
 ### 2. View modes
 
@@ -165,18 +208,37 @@ When a document is open, a segmented control appears in the toolbar:
 | Mode | What it shows |
 |------|----------------|
 | **Document** | The fully rendered, styled reading view. |
-| **Raw** | The exact, untouched Markdown source. |
+| **Raw** | The exact Markdown source (read-only). |
 | **Split** | Rendered view and source side-by-side. |
+| **Edit** | An editable source pane with a **live preview** beside it. |
 
 Your last-used view mode is remembered between sessions.
 
-### 3. The outline
+### 3. Editing & saving
+
+Switch to **Edit** mode to change the document. The left pane is an editable text area
+for the Markdown source; the right pane is a live preview that updates as you type. The
+outline and word count update live too.
+
+- **Save** — click **Save** in the toolbar or press **`Ctrl+S`** (`Cmd+S` on macOS) to
+  write your changes back to the open file.
+- **Save As…** — use the chevron next to Save, or **`Ctrl+Shift+S`**, to write to a new
+  file (a Save dialog lets you choose where).
+- A **dot on the Save button** and an **“Unsaved changes”** indicator in the status bar
+  show when you have edits that aren't saved yet.
+- If you try to open another file (or close the window) with unsaved changes, VisionMD
+  **asks before discarding** them.
+
+> In the browser build there's no file system to write to, so **Save downloads** the
+> `.md` instead. In the desktop app it writes straight to disk.
+
+### 4. The outline
 
 The left sidebar shows an **outline** built from the document's headings. Click any
 entry to smoothly scroll to that section. Toggle the sidebar with the panel button in
 the top-left of the toolbar.
 
-### 4. Searching
+### 5. Searching
 
 Press **`Ctrl+F`** (or **`Cmd+F`** on macOS), or click the 🔍 search button, to open the
 find bar. As you type, every match is highlighted and the active match is emphasised.
@@ -188,7 +250,7 @@ find bar. As you type, every match is highlighted and the active match is emphas
 Search works in whichever view is active (Document, Raw, or Split) and the counter shows
 your position, e.g. `3 / 11`.
 
-### 5. Themes
+### 6. Themes
 
 Click the 🎨 palette menu in the toolbar to switch themes. Your choice is saved and
 re-applied on next launch (with no flash of the wrong theme on startup).
@@ -201,7 +263,7 @@ re-applied on next launch (with no flash of the wrong theme on startup).
 | **Interview Notes** | Highlighted sections | Explainer docs |
 | **Dark Focus** *(default)* | Low-glare dark | Night reading |
 
-### 6. Exporting
+### 7. Exporting
 
 Click the ⬇️ **Export** menu in the toolbar:
 
@@ -211,10 +273,10 @@ Click the ⬇️ **Export** menu in the toolbar:
 - **Print · Save as PDF** — opens your system print dialog; choose “Save as PDF” to get a
   clean, app-chrome-free PDF.
 
-Exports always reflect the **full document** in the current theme, regardless of which
-view mode you're in.
+Exports always reflect the **full document** (including any unsaved edits) in the current
+theme, regardless of which view mode you're in.
 
-### 7. Reading stats
+### 8. Reading stats
 
 The status bar along the bottom shows the file name, file size, **word count**, and an
 estimated **reading time** (~200 words/minute), plus the active theme.
@@ -223,6 +285,8 @@ estimated **reading time** (~200 words/minute), plus the active theme.
 
 | Shortcut | Action |
 |----------|--------|
+| `Ctrl/Cmd + S` | Save to the current file |
+| `Ctrl/Cmd + Shift + S` | Save As… (new file) |
 | `Ctrl/Cmd + F` | Open the find bar |
 | `Enter` / `↓` | Next search match |
 | `Shift+Enter` / `↑` | Previous search match |
@@ -233,9 +297,10 @@ estimated **reading time** (~200 words/minute), plus the active theme.
 ## 🧱 Tech stack & architecture
 
 - **[Tauri 2](https://tauri.app)** — native desktop shell using the system WebView (no
-  bundled browser → small binary). The Rust side exposes a single, hardened
-  `read_text_file` command that validates the extension, caps file size, and never logs
-  file contents.
+  bundled browser → small binary). The Rust side exposes hardened `read_text_file` /
+  `write_text_file` commands that validate the extension, cap file size, and never log
+  file contents, plus single-instance + file-association handling so VisionMD can be the
+  default `.md` app.
 - **[React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org)** — UI.
 - **[Vite 7](https://vitejs.dev)** — dev server & bundler (dev URL `http://localhost:1420`).
 - **[react-markdown](https://github.com/remarkjs/react-markdown)** with `remark-gfm`,
@@ -268,7 +333,7 @@ visionmd/
 │  │  └─ preferences/         # localStorage-backed persistence
 │  ├─ styles/                 # global tokens, themes, markdown, export CSS
 │  └─ types/                  # shared types
-├─ src-tauri/                 # Rust shell (read_text_file command, capabilities)
+├─ src-tauri/                 # Rust shell (read/write commands, file associations, capabilities)
 ├─ sample-docs/               # visionmd-demo.md feature-tour document
 ├─ docs/                      # progress notes + screenshots
 └─ public/
@@ -297,12 +362,14 @@ that exercises every renderer feature — drop it into the app to see everything
 VisionMD is built to be safe with files you didn't write:
 
 - **No network & no telemetry.** Nothing is uploaded, tracked, or phoned home.
-- **Read-only.** Your `.md` file is never modified.
+- **Writes only when you save.** VisionMD never modifies your `.md` on its own — the only
+  writes happen when you explicitly Save / Save As, and it warns before discarding edits.
 - **Sanitized rendering.** Embedded HTML is sanitized; `<script>`, inline event handlers,
   and `javascript:` URLs are stripped and never executed.
 - **Safe links.** External links open with `target="_blank"` + `rel="noopener noreferrer"`.
-- **Hardened file reads.** The native file command validates the extension, enforces a
-  size cap, and never logs file contents.
+- **Hardened file I/O.** The native read/write commands validate the extension, enforce a
+  size cap, and never log file contents — so the editor can only ever read or overwrite
+  Markdown files.
 
 ---
 

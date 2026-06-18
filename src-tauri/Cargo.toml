@@ -1,8 +1,8 @@
 [package]
 name = "visionmd"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A fast, private, read-only Markdown viewer"
+authors = ["Joel Alfred"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -23,4 +23,10 @@ tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Desktop-only: keeps a single running instance so opening another .md from the
+# OS (file association / "Open with") focuses the existing window and loads the
+# new file instead of launching a duplicate window.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
 

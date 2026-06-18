@@ -35,6 +35,15 @@
   color: #4ad08a;
 }
 
+.dirty {
+  color: #c2861a;
+  font-weight: 500;
+}
+
+[data-theme="dark-focus"] .dirty {
+  color: #e0a93b;
+}
+
 @media (max-width: 720px) {
   .statusbar {
     font-size: 0.7rem;

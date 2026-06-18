@@ -15,6 +15,12 @@ export type OpenResult =
   | { status: "unsupported"; name: string }
   | { status: "error"; message: string };
 
+/** Result of a save attempt. On success it reports where it was written. */
+export type SaveResult =
+  | { status: "ok"; path: string; name: string; size: number }
+  | { status: "cancelled" }
+  | { status: "error"; message: string };
+
 /** True when running inside the Tauri webview (vs. a plain browser). */
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -73,6 +79,51 @@ export async function loadPath(path: string): Promise<OpenResult> {
   return readTauriPath(path, name);
 }
 
+/**
+ * Save `content` to an existing file path (the document's own path). On the
+ * desktop this overwrites the file; in the browser there is no path-backed
+ * file, so callers should use `saveContentAs` instead.
+ */
+export async function saveToPath(
+  path: string,
+  content: string
+): Promise<SaveResult> {
+  if (!isTauri()) {
+    return saveContentAs(content, baseName(path));
+  }
+  return writeTauriPath(path, content);
+}
+
+/**
+ * Save `content` to a new file the user picks. On the desktop this opens the
+ * native Save dialog; in the browser it downloads the file.
+ */
+export async function saveContentAs(
+  content: string,
+  suggestedName: string
+): Promise<SaveResult> {
+  return isTauri()
+    ? saveAsTauri(content, suggestedName)
+    : downloadContent(content, suggestedName);
+}
+
+/**
+ * Ask the user to confirm discarding unsaved edits before an action that would
+ * replace the current document. Returns true if it is safe to proceed.
+ */
+export async function confirmDiscardChanges(): Promise<boolean> {
+  if (isTauri()) {
+    const { ask } = await import("@tauri-apps/plugin-dialog");
+    return ask("You have unsaved changes. Discard them?", {
+      title: "Discard changes?",
+      kind: "warning",
+      okLabel: "Discard",
+      cancelLabel: "Keep editing",
+    });
+  }
+  return window.confirm("You have unsaved changes. Discard them?");
+}
+
 /* -------------------------------------------------------------------------- */
 /* Tauri implementation                                                       */
 /* -------------------------------------------------------------------------- */
@@ -105,6 +156,39 @@ async function readTauriPath(path: string, name: string): Promise<OpenResult> {
   }
 }
 
+async function writeTauriPath(
+  path: string,
+  content: string
+): Promise<SaveResult> {
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("write_text_file", { path, content });
+    return {
+      status: "ok",
+      path,
+      name: baseName(path),
+      size: byteLength(content),
+    };
+  } catch (err) {
+    return { status: "error", message: errorMessage(err) };
+  }
+}
+
+async function saveAsTauri(
+  content: string,
+  suggestedName: string
+): Promise<SaveResult> {
+  const { save } = await import("@tauri-apps/plugin-dialog");
+  const path = await save({
+    title: "Save Markdown file",
+    defaultPath: suggestedName,
+    filters: [{ name: "Markdown", extensions: [...SUPPORTED_EXTENSIONS] }],
+  });
+
+  if (!path) return { status: "cancelled" };
+  return writeTauriPath(path, content);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Browser implementation                                                     */
 /* -------------------------------------------------------------------------- */
@@ -134,6 +218,28 @@ function pickBrowserFile(): Promise<File | null> {
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                     */
 /* -------------------------------------------------------------------------- */
+
+/** Browser fallback for saving: download the content as a .md file. */
+function downloadContent(content: string, suggestedName: string): SaveResult {
+  try {
+    const name = isSupportedExtension(suggestedName)
+      ? suggestedName
+      : `${suggestedName || "document"}.md`;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    // The browser can't tell us where it landed and we keep no path handle.
+    return { status: "ok", path: "", name, size: byteLength(content) };
+  } catch (err) {
+    return { status: "error", message: errorMessage(err) };
+  }
+}
 
 function byteLength(text: string): number {
   return new TextEncoder().encode(text).length;

@@ -5,7 +5,7 @@
 > first, then continue from the next pending phase. **Update the phase table and
 > "Last completed" line at the end of every phase.**
 
-**Last completed:** Phase 12 (GitHub-ready finalisation: README/docs/license) — ✅ verified
+**Last completed:** Phase 13 (Editing: live editor + save) — ✅ verified
 **Next up:** — (all planned phases complete)
 
 ---
@@ -53,6 +53,7 @@
 | 10 | Recent files + polish + status bar | ✅ done |
 | 11 | Testing & hardening | ✅ done |
 | 12 | GitHub-ready finalisation (README/docs/license) | ✅ done |
+| 13 | Editing (live editor + Save/Save As) | ✅ done |
 
 ## 5. Key files (current)
 
@@ -366,3 +367,67 @@ dispatches: inline (no `language-*` class **and** no newline) → plain `<code>`
   drive Chrome headlessly the same way.
 - **Acceptance met:** `npx tsc --noEmit` exit 0; `npm test` 52/52 green; app renders cleanly with no console
   errors. Only docs/license/screenshots changed — no source code touched.
+
+## 19. Post-Phase-12: file associations / default Markdown reader
+
+Added so VisionMD can be set as the OS default `.md` handler **and actually opens the
+double-clicked file** (previously launching with a file arg just showed the welcome screen).
+
+- **`tauri.conf.json`:** added `bundle.fileAssociations` for `md`/`markdown`/`mdown`/`mkd`
+  (role `Viewer`), so the MSI/NSIS installer registers VisionMD as a Markdown handler and it
+  appears in Windows "Open with". Also polished: `productName` `visionmd` → `VisionMD`, window
+  title → `VisionMD`, default size 800×600 → 1180×800 with min 640×480.
+- **`src-tauri/Cargo.toml`:** added `tauri-plugin-single-instance` (desktop-only target dep).
+- **`src-tauri/src/lib.rs`:** `is_supported()` + `markdown_arg()` helpers; new `get_launch_file`
+  command returns the first supported-extension CLI arg (the OS passes the path on launch).
+  Single-instance plugin registered **first** (`#[cfg(desktop)]`): a second launch focuses the
+  existing `main` window and emits an `open-file` event with the new path instead of spawning a
+  duplicate window.
+- **`src/features/files/useLaunchFile.ts`:** new hook (no-op outside Tauri) — on mount invokes
+  `get_launch_file` and loads it, and `listen`s for `open-file`. Wired in `App.tsx` by passing
+  the existing stable `handleDropPath` (`runLoader(() => loadPath(path))`); reuses all existing
+  load/error plumbing.
+- **README:** added "Install it & run from an icon" and "Make VisionMD your default Markdown
+  reader (Windows)" sections.
+- **Verified:** `npx tsc --noEmit` exit 0; `cargo check` exit 0 (single-instance resolved);
+  `npm test` 52/52 green; browser preview still renders with no console errors (the hook is a
+  Tauri-only no-op). Full `npm run tauri build` to produce the installers is the final step
+  (slow first release compile + MSI/NSIS tooling download).
+- **Bugfix:** the first cut of `useLaunchFile` keyed its effect on `onPath`, whose identity
+  changes every render (it depends on recents state), so loading the launch file → state change
+  → new `onPath` → effect re-ran → reloaded → continuous "Opening document…" flicker. Fixed by
+  reading `onPath` through a ref and using an empty dep array (fetch launch file + attach the
+  `open-file` listener exactly once on mount).
+
+## 20. Phase 13: Editing — live editor + Save / Save As
+
+VisionMD is now a viewer **and** editor (was deliberately read-only through Phase 12). The
+read-only framing in the README/privacy text was updated to "only writes when you save".
+
+- **New `edit` view mode** (`types/index.ts` `VIEW_MODES` gains `"edit"`; `ViewModeSelector`
+  gains a Pencil-icon segment). `MarkdownEditor.tsx` = a `SplitView` with an editable
+  `<textarea>` (source) on the left and a live `<MarkdownViewer>` on the right.
+- **State model (`App.tsx`):** added `content` state = current editable source; `doc.content`
+  is the last-saved baseline. `isDirty = doc && content !== doc.content`. All views, outline,
+  reading stats, search `contentKey`, and the off-screen export source now render `content`
+  (not `doc.content`), so everything stays live while editing. On load, `applyResult` sets both
+  `doc` and `content`.
+- **Saving:** Rust `write_text_file(path, content)` (validates ext + 25 MB cap, mirrors the read
+  command) added to the invoke handler. `fileService` gains `saveToPath` (Tauri write; browser →
+  download), `saveContentAs` (Tauri Save dialog via `@tauri-apps/plugin-dialog` `save` → write;
+  browser → download), and `confirmDiscardChanges` (dialog `ask` in Tauri, `window.confirm` in
+  browser). `App` has `commitSave(snapshot, result)` → makes the saved text the new baseline and
+  adopts any new path/name (Save As) + adds to recents. `Ctrl/Cmd+S` = Save, `Ctrl/Cmd+Shift+S`
+  = Save As. `SaveMenu.tsx` = split button (one-click Save + chevron → "Save As…") with a dirty
+  dot; goes `btn-primary` when dirty.
+- **Safety:** `runLoader` calls `confirmDiscardChanges()` before replacing a dirty doc (covers
+  open/recent/drop/launch); a `beforeunload` guard warns on browser tab close/reload when dirty.
+  StatusBar shows **"Unsaved changes"** (amber, Pencil) vs **"Saved"** (green, Check).
+- **Capabilities:** added `dialog:allow-save` + `dialog:allow-ask` to `capabilities/default.json`.
+- **Verified:** `tsc` exit 0; `cargo check` exit 0; `npm test` 52/52 green. Browser preview
+  exercised live: dropped the demo, switched to Edit, typed → preview + outline + word count
+  updated and the status bar flipped to "Unsaved changes"; no console errors. Rebuilt the
+  release installers (MSI 5.5 MB / NSIS 4.5 MB / exe 12 MB). Added `docs/screenshots/08-edit-mode.png`
+  to the README gallery.
+- **Note / possible follow-up:** outline + stats recompute on every keystroke (keyed on
+  `content`). Fine for typical docs; debounce if a very large file feels laggy while typing.

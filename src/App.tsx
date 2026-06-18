@@ -5,6 +5,7 @@ import { Toolbar } from "./components/Toolbar";
 import { ViewModeSelector } from "./components/ViewModeSelector";
 import { ThemeSelector } from "./components/ThemeSelector";
 import { ExportMenu } from "./components/ExportMenu";
+import { SaveMenu } from "./components/SaveMenu";
 import { RecentMenu } from "./components/RecentMenu";
 import { SearchBar } from "./components/SearchBar";
 import { Sidebar } from "./components/Sidebar";
@@ -16,18 +17,24 @@ import { MarkdownViewer } from "./features/markdown/markdownRenderer";
 import { buildOutline, computeReadingStats } from "./features/markdown/outline";
 import { RawViewer } from "./components/RawViewer";
 import { SplitView } from "./components/SplitView";
+import { MarkdownEditor } from "./components/MarkdownEditor";
 import { DEFAULT_THEME, getTheme, isThemeId } from "./features/theme/themes";
 import {
   PREF_KEYS,
   usePersistentState,
 } from "./features/preferences/usePersistentState";
 import {
+  confirmDiscardChanges,
   loadBrowserFile,
   loadPath,
   openFile,
+  saveContentAs,
+  saveToPath,
   type OpenResult,
+  type SaveResult,
 } from "./features/files/fileService";
 import { useFileDrop } from "./features/files/useFileDrop";
+import { useLaunchFile } from "./features/files/useLaunchFile";
 import { useRecentFiles } from "./features/files/useRecentFiles";
 import { useSearch } from "./features/search/useSearch";
 import {
@@ -49,6 +56,9 @@ export default function App() {
     isViewMode
   );
   const [doc, setDoc] = useState<MarkdownDocument | null>(null);
+  // Current (editable) source. `doc.content` is the last-saved baseline; this
+  // is what every view renders and what the editor mutates.
+  const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -58,6 +68,12 @@ export default function App() {
   // export works in any view mode with Shiki/Mermaid output already baked in.
   const exportSourceRef = useRef<HTMLDivElement>(null);
   const recent = useRecentFiles();
+
+  // Unsaved-edits state. The ref lets load actions check it without being
+  // re-created when the content changes on every keystroke.
+  const isDirty = doc !== null && content !== doc.content;
+  const dirtyRef = useRef(isDirty);
+  dirtyRef.current = isDirty;
 
   // Apply the active theme to <html> so CSS token overrides take effect.
   useEffect(() => {
@@ -70,6 +86,7 @@ export default function App() {
     switch (result.status) {
       case "ok":
         setDoc(result.doc);
+        setContent(result.doc.content);
         setError(null);
         // Only path-bearing files (Tauri) can be reopened later; the hook
         // ignores path-less browser drops.
@@ -93,6 +110,8 @@ export default function App() {
   /** Run an async loader with a loading state and error fallback. */
   const runLoader = useCallback(
     async (loader: () => Promise<OpenResult>) => {
+      // Loading a new document replaces the current one — guard unsaved edits.
+      if (dirtyRef.current && !(await confirmDiscardChanges())) return;
       setLoading(true);
       try {
         applyResult(await loader());
@@ -136,14 +155,19 @@ export default function App() {
     onPath: handleDropPath,
   });
 
-  // Outline + reading stats are derived from the open document's source.
+  // Open the file VisionMD was launched with (file association / "Open with")
+  // and any file opened while it is already running. No-op in the browser.
+  useLaunchFile(handleDropPath);
+
+  // Outline + reading stats are derived from the current (editable) source so
+  // they stay in sync while editing.
   const outline = useMemo(
-    () => (doc ? buildOutline(doc.content) : []),
-    [doc]
+    () => (doc ? buildOutline(content) : []),
+    [doc, content]
   );
   const stats = useMemo(
-    () => (doc ? computeReadingStats(doc.content) : null),
-    [doc]
+    () => (doc ? computeReadingStats(content) : null),
+    [doc, content]
   );
 
   // In-document search. The content key forces a re-walk when the document or
@@ -151,7 +175,7 @@ export default function App() {
   const search = useSearch(mainRef, {
     query: searchQuery,
     enabled: searchOpen && !!doc,
-    contentKey: doc ? `${doc.name}:${doc.size}:${viewMode}` : "",
+    contentKey: doc ? `${doc.name}:${content.length}:${viewMode}` : "",
   });
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -168,6 +192,17 @@ export default function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [doc]);
+
+  // Warn before leaving (browser tab close / reload) with unsaved edits.
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isDirty]);
 
   const themeName = getTheme(theme).name;
 
@@ -187,21 +222,82 @@ export default function App() {
     printDocument({ name: doc.name, theme, contentHtml: el.outerHTML });
   }, [doc, theme]);
 
+  // Commit a save result: on success make the saved text the new baseline (so
+  // the dirty flag clears) and adopt any new path/name from Save As.
+  const commitSave = useCallback(
+    (snapshot: string, result: SaveResult) => {
+      if (result.status === "ok") {
+        setDoc((prev) =>
+          prev
+            ? {
+                ...prev,
+                path: result.path || prev.path,
+                name: result.name,
+                content: snapshot,
+                size: result.size,
+              }
+            : prev
+        );
+        setError(null);
+        if (result.path) recent.add({ path: result.path, name: result.name });
+      } else if (result.status === "error") {
+        setError(result.message);
+      }
+    },
+    [recent]
+  );
+
+  // Save to the current file. With no path yet (browser drop / new) it falls
+  // back to Save As. Snapshots the text so edits during the dialog don't skew
+  // the saved baseline.
+  const handleSave = useCallback(async () => {
+    if (!doc) return;
+    const snapshot = content;
+    const result = doc.path
+      ? await saveToPath(doc.path, snapshot)
+      : await saveContentAs(snapshot, doc.name || "document.md");
+    commitSave(snapshot, result);
+  }, [doc, content, commitSave]);
+
+  const handleSaveAs = useCallback(async () => {
+    if (!doc) return;
+    const snapshot = content;
+    commitSave(snapshot, await saveContentAs(snapshot, doc.name || "document.md"));
+  }, [doc, content, commitSave]);
+
+  // Ctrl/Cmd+S saves; add Shift for Save As.
+  useEffect(() => {
+    if (!doc) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        if (e.shiftKey) handleSaveAs();
+        else handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [doc, handleSave, handleSaveAs]);
+
   /** Pick the viewer(s) for the current mode. Only called when a doc exists. */
-  const renderDocument = (document: MarkdownDocument) => {
+  const renderContent = () => {
     switch (viewMode) {
       case "raw":
-        return <RawViewer content={document.content} />;
+        return <RawViewer content={content} />;
+      case "edit":
+        return (
+          <MarkdownEditor content={content} onChange={setContent} isDark={isDark} />
+        );
       case "split":
         return (
           <SplitView
-            left={<MarkdownViewer content={document.content} isDark={isDark} />}
-            right={<RawViewer content={document.content} />}
+            left={<MarkdownViewer content={content} isDark={isDark} />}
+            right={<RawViewer content={content} />}
           />
         );
       case "document":
       default:
-        return <MarkdownViewer content={document.content} isDark={isDark} />;
+        return <MarkdownViewer content={content} isDark={isDark} />;
     }
   };
 
@@ -227,6 +323,13 @@ export default function App() {
             >
               <Search size={16} />
             </button>
+          )}
+          {doc && (
+            <SaveMenu
+              dirty={isDirty}
+              onSave={handleSave}
+              onSaveAs={handleSaveAs}
+            />
           )}
           {doc && (
             <ExportMenu
@@ -268,7 +371,7 @@ export default function App() {
           {loading ? (
             <div className="app-loading">Opening document…</div>
           ) : doc ? (
-            renderDocument(doc)
+            renderContent()
           ) : (
             <EmptyState
               onOpenFile={handleOpenFile}
@@ -288,13 +391,14 @@ export default function App() {
           words={stats?.words}
           readingMinutes={stats?.readingMinutes}
           themeName={themeName}
+          dirty={isDirty}
         />
       }
     />
       {doc && (
         <div className="vmd-export-source" aria-hidden="true">
           <MarkdownViewer
-            content={doc.content}
+            content={content}
             isDark={isDark}
             contentRef={exportSourceRef}
           />

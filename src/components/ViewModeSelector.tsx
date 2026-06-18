@@ -1,4 +1,4 @@
-import { Code, Columns, FileText } from "lucide-react";
+import { Code, Columns, FileText, Pencil } from "lucide-react";
 import type { ViewMode } from "../types";
 import styles from "./ViewModeSelector.module.css";
 
@@ -19,6 +19,7 @@ const MODES: ModeOption[] = [
   { id: "document", label: "Document", icon: FileText, title: "Rendered document" },
   { id: "raw", label: "Raw", icon: Code, title: "Raw Markdown source" },
   { id: "split", label: "Split", icon: Columns, title: "Document and source side by side" },
+  { id: "edit", label: "Edit", icon: Pencil, title: "Edit the Markdown source with live preview" },
 ];
 
 /** Segmented control for choosing how the open document is displayed. */

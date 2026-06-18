@@ -1,4 +1,4 @@
-import { Check, Clock, Database, FileText, Hash, Palette } from "lucide-react";
+import { Check, Clock, Database, FileText, Hash, Palette, Pencil } from "lucide-react";
 import styles from "./StatusBar.module.css";
 
 interface StatusBarProps {
@@ -8,6 +8,8 @@ interface StatusBarProps {
   words?: number;
   readingMinutes?: number;
   themeName: string;
+  /** True when the document has unsaved edits. */
+  dirty?: boolean;
 }
 
 /** Human-readable byte size, e.g. 2048 -> "2 KB". */
@@ -33,6 +35,7 @@ export function StatusBar({
   words,
   readingMinutes,
   themeName,
+  dirty = false,
 }: StatusBarProps) {
   return (
     <footer className={styles.statusbar}>
@@ -66,12 +69,18 @@ export function StatusBar({
           <Palette size={13} />
           {themeName}
         </span>
-        {fileName && (
-          <span className={`${styles.item} ${styles.safe}`} title="VisionMD never edits your file">
-            <Check size={13} />
-            Source unchanged
-          </span>
-        )}
+        {fileName &&
+          (dirty ? (
+            <span className={`${styles.item} ${styles.dirty}`} title="You have unsaved edits">
+              <Pencil size={13} />
+              Unsaved changes
+            </span>
+          ) : (
+            <span className={`${styles.item} ${styles.safe}`} title="Saved — matches the file on disk">
+              <Check size={13} />
+              Saved
+            </span>
+          ))}
       </div>
     </footer>
   );
