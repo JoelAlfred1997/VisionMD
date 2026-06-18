@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VisionMD</title>
+    <!--
+      Apply the saved (or default) theme before first paint so dark-mode users
+      never see a flash of the light base tokens. Mirrors DEFAULT_THEME and the
+      persisted key in src/features/preferences/usePersistentState.ts.
+    -->
+    <script>
+      (function () {
+        var DEFAULT = "dark-focus";
+        var KNOWN = ["vision-classic", "academic", "github-clean", "interview-notes", "dark-focus"];
+        var theme = DEFAULT;
+        try {
+          var stored = JSON.parse(window.localStorage.getItem("visionmd.theme"));
+          if (KNOWN.indexOf(stored) !== -1) theme = stored;
+        } catch (e) {
+          /* storage disabled or corrupt value — fall back to the default */
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

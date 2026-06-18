@@ -1,0 +1,131 @@
+/* ==========================================================================
+   VisionMD — Themes
+   Each theme overrides the color tokens defined in global.css. Structure is
+   intentionally uniform so adding a custom theme later is copy + recolor.
+   Document-specific tokens (--doc-*) tune the rendered reading surface.
+   ========================================================================== */
+
+/* 1. Vision Classic — clean modern default ------------------------------- */
+[data-theme="vision-classic"] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f0f1f4;
+  --text: #1c2024;
+  --text-muted: #5b636c;
+  --border: #e2e5ea;
+  --accent: #3b6cf6;
+  --accent-contrast: #ffffff;
+  --code-bg: #f5f6f8;
+  --code-text: #1c2024;
+  --selection: rgba(59, 108, 246, 0.18);
+
+  --doc-font: var(--font-sans);
+  --doc-bg: #ffffff;
+  --doc-text: #20242a;
+  --doc-heading: #11151b;
+  --doc-link: #3b6cf6;
+  --doc-rule: #e6e8ec;
+  --doc-quote-bar: #c9d3ea;
+  --doc-measure: 760px;
+  color-scheme: light;
+}
+
+/* 2. Academic — formal serif --------------------------------------------- */
+[data-theme="academic"] {
+  --bg: #efeae1;
+  --surface: #fbf8f2;
+  --surface-2: #f1ece2;
+  --text: #2b2620;
+  --text-muted: #6c6358;
+  --border: #ddd5c7;
+  --accent: #8a5a2b;
+  --accent-contrast: #fbf8f2;
+  --code-bg: #f2ece0;
+  --code-text: #3a332a;
+  --selection: rgba(138, 90, 43, 0.18);
+
+  --doc-font: var(--font-serif);
+  --doc-bg: #fdfbf6;
+  --doc-text: #2b2620;
+  --doc-heading: #1f1a14;
+  --doc-link: #8a5a2b;
+  --doc-rule: #e3dbcc;
+  --doc-quote-bar: #d8c8aa;
+  --doc-measure: 720px;
+  color-scheme: light;
+}
+
+/* 3. GitHub Clean -------------------------------------------------------- */
+[data-theme="github-clean"] {
+  --bg: #eef0f2;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --text: #1f2328;
+  --text-muted: #636c76;
+  --border: #d8dee4;
+  --accent: #0969da;
+  --accent-contrast: #ffffff;
+  --code-bg: #f6f8fa;
+  --code-text: #1f2328;
+  --selection: rgba(9, 105, 218, 0.16);
+
+  --doc-font: var(--font-sans);
+  --doc-bg: #ffffff;
+  --doc-text: #1f2328;
+  --doc-heading: #1f2328;
+  --doc-link: #0969da;
+  --doc-rule: #d8dee4;
+  --doc-quote-bar: #d0d7de;
+  --doc-measure: 820px;
+  color-scheme: light;
+}
+
+/* 4. Interview Notes — highlighted sections ------------------------------ */
+[data-theme="interview-notes"] {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #eaeef5;
+  --text: #1b2330;
+  --text-muted: #586173;
+  --border: #dbe1ec;
+  --accent: #6d4ad6;
+  --accent-contrast: #ffffff;
+  --code-bg: #f1f3f9;
+  --code-text: #1b2330;
+  --selection: rgba(109, 74, 214, 0.18);
+
+  --doc-font: var(--font-sans);
+  --doc-bg: #ffffff;
+  --doc-text: #1b2330;
+  --doc-heading: #15203a;
+  --doc-link: #6d4ad6;
+  --doc-rule: #e4e8f1;
+  --doc-quote-bar: #cdbff2;
+  --doc-measure: 780px;
+  color-scheme: light;
+}
+
+/* 5. Dark Focus ---------------------------------------------------------- */
+[data-theme="dark-focus"] {
+  --bg: #15171c;
+  --surface: #1d2026;
+  --surface-2: #252932;
+  --text: #e6e8ec;
+  --text-muted: #9aa3af;
+  --border: #2e333d;
+  --accent: #6ea8fe;
+  --accent-contrast: #0c1018;
+  --code-bg: #15181e;
+  --code-text: #e6e8ec;
+  --selection: rgba(110, 168, 254, 0.24);
+
+  --doc-font: var(--font-sans);
+  --doc-bg: #1b1e24;
+  --doc-text: #d7dbe0;
+  --doc-heading: #f1f3f6;
+  --doc-link: #6ea8fe;
+  --doc-rule: #2e333d;
+  --doc-quote-bar: #3a4150;
+  --doc-measure: 780px;
+  color-scheme: dark;
+}

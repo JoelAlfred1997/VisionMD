@@ -1,0 +1,45 @@
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--statusbar-height);
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.safe {
+  color: #1a9b54;
+}
+
+[data-theme="dark-focus"] .safe {
+  color: #4ad08a;
+}
+
+@media (max-width: 720px) {
+  .statusbar {
+    font-size: 0.7rem;
+  }
+  .group {
+    gap: var(--space-3);
+  }
+}

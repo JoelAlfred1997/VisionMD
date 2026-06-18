@@ -1,0 +1,32 @@
+.split {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.pane {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Dividing rule between the two panes (right pane carries the left border). */
+.divider {
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  /* Too narrow for two columns — stack them vertically. */
+  .split {
+    flex-direction: column;
+  }
+  .pane {
+    flex: 1 1 50%;
+    height: auto;
+  }
+  .divider {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}

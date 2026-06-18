@@ -1,0 +1,49 @@
+/* ==========================================================================
+   VisionMD — Export & print
+   Off-screen render source used to capture a fully-rendered document, plus a
+   light @media print pass so a manual Ctrl+P of the app still looks clean.
+   The Export menu's own paths render into a standalone iframe/file and do not
+   rely on these app rules.
+   ========================================================================== */
+
+/* Hidden, always-rendered document used as the export capture source. It is
+   laid out (so Shiki/Mermaid finish) but collapsed and off-flow so it never
+   shows or affects the visible layout. */
+.vmd-export-source {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 820px;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Manual browser print (Ctrl+P): drop app chrome, print just the document. */
+@media print {
+  .app-shell,
+  .app-body {
+    display: block;
+    height: auto;
+  }
+  .app-shell > header,
+  .app-body > :not(.app-main),
+  .app-shell > :last-child,
+  .vmd-export-source {
+    display: none !important;
+  }
+  .app-main {
+    overflow: visible !important;
+    position: static !important;
+  }
+  .markdown-scroll {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

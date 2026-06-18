@@ -1,0 +1,63 @@
+.outline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heading {
+  margin: 0;
+  padding: 0 var(--space-1) var(--space-1);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.link {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 5px var(--space-2) 5px var(--space-2);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.link:hover {
+  background: var(--surface-hover, var(--border));
+  color: var(--accent);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Top-level headings read as the strongest anchors; deeper ones de-emphasize. */
+.link[data-level="1"] {
+  font-weight: 600;
+}
+
+.link[data-level="3"] {
+  color: var(--text-muted);
+}
